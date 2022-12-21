@@ -37,7 +37,16 @@ function ArrayTimSortImpl(sortState) {
 
         // 合并分区
         MergeCollapse(sortState);
+
+        // 寻找下一个分区
+
+        low = low + currentRunlength;
+
+        remaining = remaining - currentRunlength;
     }
+
+    // 合并栈中的所有分区，直到只剩一个，排序结束
+    MergeForceCollapse(sortState);
 
 }
 
@@ -57,5 +66,9 @@ function PushRun() {
 }
 
 function MergeCollapse() {
+
+}
+
+function MergeForceCollapse() {
     
 }

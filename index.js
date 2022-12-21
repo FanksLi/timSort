@@ -1,9 +1,9 @@
-const {ArrayTimSortImpl} = require('./timSort');
+const ArrayTimSortImpl = require('./timSort');
 
 function TimSort(array, compare = (a, b) => a - b) {
     const sortState = {
         workArray: array,
-        Compare: compare,
+        compare: compare,
     };
 
 
@@ -12,4 +12,4 @@ function TimSort(array, compare = (a, b) => a - b) {
     return sortState.workArray;
 }
 
-module.export = TimSort;
+module.exports = TimSort;

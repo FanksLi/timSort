@@ -9,28 +9,27 @@ function ArrayTimSortImpl(sortState) {
     let low = 0;
     let remaining = length;
 
-    // const minRunLength = ComputeMinRunLength(remaining);
-
+    const minRunLength = ComputeMinRunLength(remaining);
 
     while (remaining !== 0) {
 
         // 寻找分区并返回分区长度值
         let currentRunlength = CountAndMakeRun(sortState, low, low + remaining);
 
-    //     if (currentRunlength < minRunLength) {
+        if (currentRunlength < minRunLength) {
 
-    //         // 扩展分区
-    //         const forceRunLength = Math.min(minRunLength, remaining);
+            // 扩展分区
+            const forceRunLength = Math.min(minRunLength, remaining);
 
-    //         BinaryInsertionSort(
-    //             sort,
-    //             low,
-    //             low + currentRunlength,
-    //             low + forceRunLength
-    //         );
+            BinaryInsertionSort(
+                sortState,
+                low,
+                low + currentRunlength,
+                low + forceRunLength
+            );
 
-    //         currentRunlength = forceRunLength;
-    //     }
+            currentRunlength = forceRunLength;
+        }
 
     //     // 分区入栈
     //     PushRun(sortState, low, currentRunlength);
@@ -84,12 +83,13 @@ function CountAndMakeRun(sortState, lowArg, high) {
         ++runLength;
     }   
     if(isDescending) {
-        Reverse(workArray, lowArg, lowArg + runLength);
+        ReverseRange(workArray, lowArg, lowArg + runLength);
     }
     return runLength;
 }
 
-function Reverse(workArray, form, to) {
+// 翻转数组
+function ReverseRange(workArray, form, to) {
     let low = form;
     let high = to - 1;
 
@@ -102,7 +102,47 @@ function Reverse(workArray, form, to) {
     }   
 }
 
-function BinaryInsertionSort() {
+// 计算分区最小长度值
+function ComputeMinRunLength(nArg) {
+    let n = nArg;
+    let r = 0;
+
+    while(n >= 64) {
+        r = r | (n & 1);
+        n = n >> 1;
+    }
+    const minRunLength = n + r;
+    return minRunLength;
+}
+
+// 扩展分区
+function BinaryInsertionSort(sortState, low, startArg, high) {
+    const workArray = sortState.workArray;
+
+    let start = low === startArg ? startArg + 1 : startArg;
+
+    for(; start < high; ++start) {
+        let left = low,
+        right = start;
+
+        const pivot = workArray[right];
+
+        while(left < right) {
+            const mid = left + ((right - left) >> 1);
+            const order = sortState.compare(pivot, workArray[mid]);
+
+            if(order < 0) {
+                right = mid;
+            } else {
+                left = mid + 1;
+            }
+        }
+
+        for(let p = start; p > left; --p) {
+            workArray[p] = workArray[p - 1];
+        }
+        workArray[left] = pivot;
+    }
 
 }
 

@@ -11,10 +11,12 @@ function TimSort(array, compare = (a, b) => a - b) {
         pendingRuns: [],
 
         minGallop: 7,
+        tempArray: [],
     };
 
 
     ArrayTimSortImpl(sortState);
+    console.log(sortState.workArray);
     return sortState.workArray;
 }
 

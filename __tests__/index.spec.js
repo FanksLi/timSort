@@ -33,8 +33,9 @@ describe('数组排序', () => {
             arr[i] = i % 32;
         }
         arr[32] = -1;
+        const copyArr = [...arr];
         const res = sort(arr, compare);
-        console.log(res);
-        expect(res).toBe(arr.sort(compare));
+        console.log(copyArr.sort(compare));
+        expect(res).toEqual(copyArr.sort(compare));
     });
 });

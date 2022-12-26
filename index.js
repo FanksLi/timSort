@@ -3,9 +3,6 @@ const {ArrayTimSortImpl} = require('./timSort');
 function TimSort(array, compare = (a, b) => a - b) {
     const sortState = {
         workArray: array,
-<<<<<<< Updated upstream:index.js
-        Compare: compare,
-=======
         compare: compare,
 
         // 记录分区信息的栈的大小
@@ -14,7 +11,6 @@ function TimSort(array, compare = (a, b) => a - b) {
         pendingRuns: [],
 
         minGallop: 7,
->>>>>>> Stashed changes:src/index.js
     };
 
 

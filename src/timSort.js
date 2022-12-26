@@ -47,8 +47,8 @@ function ArrayTimSortImpl(sortState) {
         remaining = remaining - currentRunlength;
     }
 
-    // // 合并栈中的所有分区，直到只剩一个，排序结束
-    // MergeForceCollapse(sortState);
+    // 合并栈中的所有分区，直到只剩一个，排序结束
+    MergeForceCollapse(sortState);
 
 }
 
@@ -238,7 +238,7 @@ function MergeAt(sortState, i) {
     const keyRight = workArray[baseB];
     // array[base+offset-1] <= key<array[base + offset]
 
-    const k = GallopRight(sortState, keyRight, baseA, baseLengthA, 0);
+    const k = GallopRight(sortState, sortState.workArray, keyRight, baseA, baseLengthA, 0);
 
     baseA = baseA + k;
     baseLengthA = baseLengthA - k;
@@ -247,11 +247,11 @@ function MergeAt(sortState, i) {
 
     const keyLeft = workArray[baseA + baseLengthA - 1];
     // array[base + offset] < key <= array[base + offset + 1]
-    baseLengthB = GallopLeft(sortState, keyLeft, baseB, baseLengthB, baseLengthB - 1);
+    baseLengthB = GallopLeft(sortState, sortState.workArray, keyLeft, baseB, baseLengthB, baseLengthB - 1);
 
-    if(baseLengthB === 0) return;
+    if (baseLengthB === 0) return;
 
-    if(baseLengthA === baseLengthB) {
+    if (baseLengthA === baseLengthB) {
         MergeLow(sortState, baseA, baseLengthA, baseB, baseLengthB);
     } else {
         MergeHigh(sortState, baseA, baseLengthA, baseB, baseLengthB);
@@ -260,21 +260,25 @@ function MergeAt(sortState, i) {
 }
 
 // array[base+offset-1] <= key<array[base + offset]
-function GallopRight(sortState, key, base, length, hint) {
+function GallopRight(sortState, array, key, base, length, hint) {
     const workArray = sortState.workArray;
     let lastOfs = 0;
     let offset = 1;
 
-    const baseHintElement = workArray[base + hint];
+    const baseHintElement = array[base + hint];
     let order = sortState.compare(key, baseHintElement);
     if (order < 0) {
         const maxOfs = hint + 1;
         while (offset < maxOfs) {
-            const offsetElement = workArray[base + hint - offset];
+            const offsetElement = array[base + hint - offset];
             order = sortState.compare[key, offsetElement];
 
-            if (order >= 0) {
-                offset = maxOfs;
+            if (order >= 0) break;
+            lastOfs = offset;
+            offset = (offset << 1) + 1;
+
+            if(offset <= 0) {
+                offset = maxOfs
             }
         }
 
@@ -289,7 +293,7 @@ function GallopRight(sortState, key, base, length, hint) {
     } else {
         const maxOfs = length - hint;
         while (offset < maxOfs) {
-            const offsetElement = workArray[base + hint + offset];
+            const offsetElement = array[base + hint + offset];
             order = sortState.compare(key, offsetElement);
 
             if (order < 0) break;
@@ -312,7 +316,7 @@ function GallopRight(sortState, key, base, length, hint) {
         while (lastOfs < offset) {
             const m = lastOfs + ((offset - lastOfs) >> 1);
 
-            order = sortState.compare(key, workArray[base + m]);
+            order = sortState.compare(key, array[base + m]);
 
             if (order < 0) {
                 // 左区间
@@ -326,21 +330,21 @@ function GallopRight(sortState, key, base, length, hint) {
     return offset;
 }
 // array[base + offset] < key <= array[base + offset + 1]
-function GallopLeft(sortState, key, base, length, hint) {
+function GallopLeft(sortState, array, key, base, length, hint) {
     const workArray = sortState.workArray;
 
     let lastOfs = 0;
     let offset = 1;
 
     // 分区b最大值
-    const baseHintElement = workArray[base + hint];
+    const baseHintElement = array[base + hint];
     let order = sortState.compare(baseHintElement, key);
 
     if (order < 0) {
         const maxOfs = length + hint;
 
         while (offset < maxOfs) {
-            const offsetElement = workArray[base + offset + hint];
+            const offsetElement = array[base + offset + hint];
             order = sortState.compare(offsetElement, key);
 
             if (order >= 0) break;
@@ -364,7 +368,7 @@ function GallopLeft(sortState, key, base, length, hint) {
         const maxOfs = hint + 1;
 
         while (offset < maxOfs) {
-            const offsetElement = workArray[base + hint - offset];
+            const offsetElement = array[base + hint - offset];
             order = sortState.compare(offsetElement, key);
 
             if (order < 0) break;
@@ -390,7 +394,7 @@ function GallopLeft(sortState, key, base, length, hint) {
 
     while (lastOfs < offset) {
         const m = lastOfs + ((offset - lastOfs) >> 1);
-        order = sortState.compare(workArray[base + m], key);
+        order = sortState.compare(array[base + m], key);
         if (order < 0) {
             lastOfs = m + 1;
         } else {
@@ -466,7 +470,7 @@ function MergeHigh(sortState, baseA, lengthAArg, baseB, lengthBArg) {
                 if (nofWinsB >= minGallop) break;
             }
         }
- 
+
         ++minGallop;
         let firstIteration = true;
         while (nofWinsA >= kMinGallopWins || nofWinsB >= kMinGallopWins || firstIteration) {
@@ -480,7 +484,7 @@ function MergeHigh(sortState, baseA, lengthAArg, baseB, lengthBArg) {
 
             let k = GallopRight(sortState, workArray, tempArray[cursorTemp], baseA, lengthA, lengthA - 1);
             nofWinsA = lengthA - k;
-            if(nofWinsA > 0) {
+            if (nofWinsA > 0) {
                 // 有nofwinsA，连续个元素比B分区的最大值要大
 
                 dest -= nofWinsA;
@@ -490,14 +494,14 @@ function MergeHigh(sortState, baseA, lengthAArg, baseB, lengthBArg) {
 
                 lengthA -= nofWinsA;
 
-                if(lengthA === 0) {
+                if (lengthA === 0) {
                     Succeed();
                     return;
                 }
             }
             workArray[dest--] = tempArray[cursorTemp--];
 
-            if(--lengthB === 1) {
+            if (--lengthB === 1) {
                 CopyA();
                 return;
             }
@@ -508,19 +512,19 @@ function MergeHigh(sortState, baseA, lengthAArg, baseB, lengthBArg) {
 
             nofWinsB = lengthB - k;
 
-            if(nofWinsB > 0) {
+            if (nofWinsB > 0) {
                 // 在b分区中，有nofWinsB个元素比a分区最大值还要大
                 dest -= nofWinsB;
                 cursorTemp -= nofWinsB;
                 Copy(tempArray, cursorTemp + 1, workArray, dest + 1, nofWinsB);
                 lengthB -= nofWinsB;
 
-                if(lengthB === 1) {
+                if (lengthB === 1) {
                     CopyA();
                     return;
                 }
 
-                if(lengthB === 0) {
+                if (lengthB === 0) {
                     // Succeed();
                     return;
                 }
@@ -528,7 +532,7 @@ function MergeHigh(sortState, baseA, lengthAArg, baseB, lengthBArg) {
 
             workArray[dest--] = workArray[cursorA--];
 
-            if(--lengthA === 0) {
+            if (--lengthA === 0) {
                 Succeed();
                 return;
             }
@@ -556,17 +560,189 @@ function MergeHigh(sortState, baseA, lengthAArg, baseB, lengthBArg) {
     }
 }
 
-function MergeLow(source, srcPos, target, dstPos, length) { }
+// 合并剩下的分区AB
+// 把所剩下的分区A存到临时的数组tempArray
+// workArray[dest++]  workArray[currorB++]
+// A或者B连续赢得7次，就可以狂奔（gallop）
+// 
+function MergeLow(sortState, baseA, lengthAArg, baseB, lengthBArg) {
+    invariant(lengthAArg > 0 && lengthBArg > 0, 'length > 0');
+    invariant(baseA >= 0 && baseB > 0, '分区A起始下标>=0,分区b的起始下标>0');
+    invariant(baseA + lengthAArg === baseB, 'AB分区连续');
+
+    const workArray = sortState.workArray;
+    const tempArray = GetTempArray(sortState, lengthAArg);
+    Copy(workArray, baseA, tempArray, 0, lengthAArg);
+
+    let lengthA = lengthAArg;
+    let lengthB = lengthBArg;
+    // 合并分区AB从那里开始存贮元素
+    let dest = baseA;
+    // 最新分区B的起始下标
+    let cursorB = baseB;
+    // 临时数组的下标
+    let cursorTemp = 0;
+
+    workArray[dest++] = workArray[cursorB++];
+
+    if (--lengthB === 0) {
+        Succeed();
+        return;
+    }
+
+    if (lengthA === 1) {
+        // 那么临时数组的当前值就是比分区b剩余的元素要大
+        CopyB();
+        return;
+    }
+
+    let minGallop = sortState.minGallop;
+    while (1) {
+        console.log(lengthA, lengthB);
+        // invariant(lengthA > 1 && lengthB > 0, 'wrong length');
+
+        let nofWinsA = 0;
+        let nofWinsB = 0;
+
+        while (1) {
+            // invariant(lengthA > 1 && lengthB > 0, 'wrong length');
+
+            const order = sortState.compare(workArray[cursorB], tempArray[cursorTemp]);
+
+            if (order < 0) {
+                workArray[dest++] = workArray[cursorB++];
+
+                ++nofWinsB;
+                --lengthB;
+                nofWinsA = 0;
+
+                if (lengthB === 0) {
+                    Succeed();
+                    return;
+                }
+
+                if (nofWinsB >= minGallop) break;
+            } else {
+                workArray[dest++] = tempArray[cursorTemp++];
+
+                ++nofWinsA;
+                --lengthA;
+                nofWinsB = 0;
+
+                if (lengthA === 0) {
+                    Succeed();
+                    return;
+                }
+
+                if (nofWinsA >= minGallop) break;
+            }
+        }
+
+        // 狂奔gallop
+        ++minGallop;
+        let firstIteration = true;
+        while (nofWinsA >= kMinGallopWins || nofWinsB >= kMinGallopWins || firstIteration) {
+            firstIteration = false;
+            invariant(lengthA > 1 && lengthB > 0, 'wrong length');
+
+            minGallop = Math.max(1, minGallop);
+
+            sortState.minGallop = minGallop;
+
+            nofWinsA = GallopRight(sortState, tempArray, workArray[cursorB], cursorTemp, lengthA, 0);
+
+            invariant(nofWinsA >= 0, 'offset nofWinsA > 0');
+
+            if(nofWinsA > 0) {
+                Copy(tempArray, cursorTemp, workArray, dest, nofWinsA);
+
+                dest += nofWinsA;
+                cursorTemp += nofWinsA;
+                lengthA -= nofWinsA;
+
+                if(lengthA === 1) {
+                    CopyB();
+                    return;
+                }
+
+                if(lengthA === 0) {
+                    Succeed();
+                    return;
+                }
+            }
+
+            workArray[dest++] = workArray[cursorB++];
+            if(--lengthB === 0) {
+                Succeed();
+                return;
+            }
+
+            nofWinsB = GallopLeft(sortState, workArray, tempArray[cursorTemp], cursorB, lengthB, 0);
+
+            invariant(nofWinsA >= 0, 'wrong offset of B');
+
+            if(nofWinsB > 0) {
+                Copy(workArray, cursorB, workArray, dest, nofWinsB);
+
+                dest += nofWinsB;
+                cursorB += nofWinsB;
+                lengthB -= nofWinsB;
 
 
+                if(lengthB > 0) {
+                    Succeed();
+                    return;
+                }
+            }
+            workArray[dest++] = tempArray[cursorTemp++];
 
+            if(--lengthA === 1) {
+                CopyB();
+                return;
+            }
+        }
+
+        ++minGallop;
+        sortState.minGallop = minGallop;
+    }
+
+    // 剩余法分区b没有元素了, 把临时的tempArray拷贝到workArray
+    function Succeed() {
+        if (lengthA > 0) {
+            Copy(tempArray, cursorTemp, workArray, dest, lengthA);
+        }
+    }
+
+    // 分区A只剩下一个元素
+    function CopyB() {
+        invariant(lengthA === 1 && lengthB > 0, 'wrong length !!');
+
+        Copy(workArray, cursorB, workArray, dest, lengthB);
+        workArray[dest + lengthB] = tempArray[cursorTemp];
+    }
+}
+function GetTempArray(sortState, requestedSize) {
+    const minSize = Math.min(32, requestedSize);
+
+    if(sortState.tempArray.length >= minSize ) {
+        return sortState.tempArray;
+    }
+
+    const tempArray = new Array(minSize);
+
+    sortState.tempArray = tempArray;
+    return tempArray;
+}
+
+// 拷贝函数
 function Copy(source, srcPos, target, dstPos, length) {
 
-    if(srcPos < dstPos) {
+    // source和target可能是同一个数组
+    if (srcPos < dstPos) {
         let srcIdx = srcPos + length - 1;
         let dstIdx = dstPos + length - 1;
 
-        while(srcIdx >= dstIdx) {
+        while (srcIdx >= dstIdx) {
             target[dstIdx--] = source[srcIdx--];
         }
 
@@ -574,9 +750,25 @@ function Copy(source, srcPos, target, dstPos, length) {
         let srcIdx = srcPos;
         let dstIdx = dstPos;
         const to = srcPos + length;
-        while(srcIdx < to) {
+        while (srcIdx < to) {
             target[dstIdx++] = source[srcIdx++];
         }
+    }
+}
+
+function MergeForceCollapse(sortState) {
+
+    while(sortState.pendingRunSize > 1) {
+        let n = sortState.pendingRunSize - 2;
+        if(
+            n > 0 && 
+            GetPendingRunLength(sortState.pendingRuns, n - 1) < 
+            GetPendingRunLength(sortState.pendingRuns, n + 1)
+        ) {
+            --n;
+        }
+
+        MergeAt(sortState, n);
     }
 }
 
